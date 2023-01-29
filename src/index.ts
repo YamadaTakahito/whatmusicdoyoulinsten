@@ -1,5 +1,7 @@
 /* eslint-disable indent */
 export {};
+const TODAY = "2023-01-29";
+const CHECK_TIME = true; // 時間をチェックするかどうか
 const SLACK_API_TOKEN = PropertiesService.getScriptProperties().getProperty("slack_api_token");
 const STATUS_EXPIRE_SEC = 60 * 5; // 5分がexpire
 const SPOTIFY_CLIENT_ID = PropertiesService.getScriptProperties().getProperty("spotify_client_id");
@@ -11,6 +13,24 @@ const SPOTIFY_REFRESH_TOKEN_KEY = "spotify_refresh_token";
 
 // eslint-disable-next-line no-unused-vars
 function main() {
+  if (CHECK_TIME) {
+    const now = new Date();
+    const today = new Date(Date.parse(TODAY));
+    console.log(`now: ${now}, today: ${today}`);
+    if (now.getFullYear() !== today.getFullYear() || now.getMonth() !== today.getMonth() || now.getDay() !== today.getDay()) {
+      console.log("SKIP BECAUSE IS NOT TODAY");
+      return;
+    }
+    if (now.getHours() < 10 || now.getHours() > 19) {
+      console.log("SKIP BECAUSE OF HOUR");
+      return;
+    }
+    if (now.getUTCDay() === 0 || now.getUTCDay() === 6) {
+      // 日曜日と土曜日はスキップする
+      console.log("SKIP BECAUSE OF DATE");
+      return;
+    }
+  }
   let accessToken = PropertiesService.getScriptProperties().getProperty(SPOTIFY_ACCESS_TOKEN_KEY);
   if (accessToken === null) {
     accessToken = getFirstAccessTokenToSpotify(SPOTIFY_AUTH_CODE, SPOTIFY_BASIC_AUTH);
@@ -106,7 +126,7 @@ const getNowPlaying = (accessToken: string, basicAuth: string, retry = 0): strin
   const options = {
     "headers": {"Authorization": "Bearer " + accessToken},
     "muteHttpExceptions": true, // 401エラーへの対応のため,
-    "Accept-Language": "ja,en"
+    "Accept-Language": "ja"
   };
   const response = UrlFetchApp.fetch("https://api.spotify.com/v1/me/player/currently-playing", options);
 
